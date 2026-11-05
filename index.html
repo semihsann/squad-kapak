@@ -68,6 +68,9 @@ button:hover{border-color:var(--muted)}
 .steps{margin:0;padding-left:20px;color:var(--muted);font-size:14px;display:grid;gap:4px}
 .steps b{color:var(--fg);font-weight:600}
 .refs{font-family:var(--mono);font-size:12px;color:var(--sand)}
+.gameinfo{font-size:13px;color:var(--muted);border-left:2px solid var(--zone);padding:8px 10px;background:var(--panel2);border-radius:0 4px 4px 0}
+.gameinfo b{color:var(--fg);font-weight:600}
+.gameinfo:empty{display:none}
 .hint{font-size:13px;color:var(--muted);margin:0}
 @media (prefers-reduced-motion:no-preference){#prompt.flash{animation:fl .5s ease}@keyframes fl{from{background:#14233a}to{background:transparent}}}
 </style>
@@ -119,6 +122,7 @@ button:hover{border-color:var(--muted)}
             <datalist id="games"></datalist>
             <label for="place">Mekan (boş bırakırsan her seferinde farklı)<input id="place" placeholder="ör. Verdansk stadyumu"></label>
           </div>
+          <div class="gameinfo" id="gameinfo" role="status"></div>
         </div>
         <div class="sec">
           <h2>Kadro <span class="refs" id="count-diger"></span></h2>
@@ -312,7 +316,9 @@ function buildDiger(){
   const ps=S.players.filter(p=>p.name.trim()),n=ps.length,L=[];
   L.push(`Create a photorealistic, cinematic action image of ${n===1?"one person":n+" people"}, inspired by the video game ${game}, shown as a real-life live-action movie still. Use the attached reference photos for their faces.`,"","REFERENCE PHOTOS");
   ps.forEach((p,i)=>L.push(`- Photo ${i+1} = ${p.name.trim()}`));
-  const loc=place?`${place}, in the world of ${game}`:(R.gd?R.bg+`, from the world of ${game}`:`an iconic, recognizable location from ${game} — this time ${R.bg}`);
+  const gi=gameInfo();
+  L.push("","ABOUT THE GAME",gi?`${gi.title}: ${gi.text}`:`Look up ${game} (search the web if you can) to understand its setting, era, art direction and iconic locations.`,"Make the location, outfits, weapons and atmosphere feel true to this game.");
+  const loc=place?`${place}, in the world of ${game}`:(R.gd?R.bg+`, from the world of ${game}`:`an iconic, recognizable location from ${game} that matches its real setting (pick a different one each time)`);
   L.push("","SETTING",`Location: ${loc}, recreated as a realistic real-world place.`,`Moment: ${R.sc}${R.gd?"":", in the style of "+game}.`,"","CHARACTERS");
   ps.forEach((p,i)=>{
     const w=p.weapon.trim()?p.weapon.trim():"a weapon that fits the game";
@@ -326,6 +332,29 @@ function buildDiger(){
   L.push(RULE_TEXT);
   return {text:L.join("\n"),meta:`${S.game.trim()||"Oyun"} · ${n} kişi`};
 }
+
+const WIKI={};let wikiT;
+async function lookupGame(name){
+  const q=(name||"").trim(),key=q.toLowerCase(),box=$("gameinfo");
+  if(q.length<2){box.textContent="";return}
+  if(key in WIKI){showWiki(WIKI[key]);return}
+  box.textContent="Oyun aranıyor…";
+  let info=null;
+  try{
+    const s=await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=1&format=json&origin=*&srsearch="+encodeURIComponent(q+" video game")).then(r=>r.json());
+    const hit=s&&s.query&&s.query.search&&s.query.search[0];
+    if(hit){
+      const p=await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(hit.title.replace(/ /g,"_"))).then(r=>r.json());
+      if(p&&p.extract)info={title:p.title,text:p.extract.split(/(?<=\.)\s+/).slice(0,4).join(" ")};
+    }
+  }catch(e){}
+  WIKI[key]=info;
+  if(state.diger.game.trim().toLowerCase()===key){showWiki(info);if(state.tab==="diger")update(false)}
+}
+function showWiki(info){
+  $("gameinfo").innerHTML=info?`<b>Bulunan oyun: ${esc(info.title)}</b><br>${esc(info.text)}`:"Bu oyun hakkında bilgi bulunamadı. Tarif, ChatGPT'den oyunu kendisinin araştırmasını istiyor.";
+}
+function gameInfo(){return WIKI[state.diger.game.trim().toLowerCase()]||null}
 
 function update(newRoll){
   const tab=state.tab;
@@ -359,7 +388,7 @@ function init(){
   $("spot").addEventListener("input",e=>{P.spot=e.target.value;update(false)});
   $("scene-pubg").addEventListener("input",e=>{P.scene=e.target.value;update(false)});
   $("time-pubg").addEventListener("change",e=>{P.time=e.target.value;update(true)});
-  $("game").addEventListener("input",e=>{D.game=e.target.value;update(false)});
+  $("game").addEventListener("input",e=>{D.game=e.target.value;update(false);clearTimeout(wikiT);wikiT=setTimeout(()=>lookupGame(D.game),700)});
   $("place").addEventListener("input",e=>{D.place=e.target.value;update(false)});
   $("outfit").addEventListener("input",e=>{D.outfit=e.target.value;update(false)});
   $("vest").addEventListener("change",e=>{D.vest=e.target.checked;update(false)});
@@ -386,6 +415,7 @@ function init(){
   const fromHash=()=>{const h=location.hash.slice(1);return ["pubg","diger"].includes(h)?h:null};
   window.addEventListener("hashchange",()=>{const h=fromHash();if(h)setTab(h)});
   setTab(fromHash()||state.tab);
+  lookupGame(D.game);
 }
 let tt;function toast(m){const t=$("toast");t.textContent=m;clearTimeout(tt);tt=setTimeout(()=>t.textContent="",2200)}
 init();
