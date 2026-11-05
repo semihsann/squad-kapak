@@ -128,7 +128,7 @@ button:hover{border-color:var(--muted)}
           <h2>Kadro <span class="refs" id="count-diger"></span></h2>
           <div class="plist" id="players-diger"></div>
           <button class="add" id="add-diger" type="button">+ Oyuncu ekle</button>
-          <p class="hint">Silah yerine eşya da yazabilirsin (kılıç, yay, kazma, araba…). Sıra yine fotoğraf sırası.</p>
+          <p class="hint">Silah yerine eşya da yazabilirsin (kılıç, yay, kazma, araba…). Sıra yine fotoğraf sırası. Bu sekmede 10 kişiye kadar ekleyebilirsin.</p>
         </div>
         <div class="sec">
           <h2>Görünüm</h2>
@@ -271,16 +271,67 @@ function renderPlayers(tab){
     row.querySelector(`#${tab}-pw${i}`).addEventListener("input",e=>{S.players[i].weapon=e.target.value;update(false)});
     const rm=row.querySelector("[data-rm]");if(rm)rm.addEventListener("click",()=>{S.players.splice(i,1);renderPlayers(tab);update(true)});
   });
-  $("add-"+tab).hidden=S.players.length>=4;
-  $("count-"+tab).textContent=S.players.length+"/4";
+  $("add-"+tab).hidden=S.players.length>=MAXP[tab];
+  $("count-"+tab).textContent=S.players.length+"/"+MAXP[tab];
 }
 
+const MAXP={pubg:4,diger:10};
+const GENRES={
+ shooter:{tr:"Nişancı / askeri",kw:["shooter","military","warfare","battle royale","tactical","soldier","special forces","firearm","combat"],weapon:"a firearm that fits the game"},
+ fantasy:{tr:"Fantastik / ortaçağ",kw:["fantasy","medieval","sword","magic","dragon","knight","samurai","viking","feudal","soulslike","mythology","hack and slash","role-playing"],
+  bg:["a misty castle courtyard with torn banners","a burning medieval village at dusk","a mountain shrine above the clouds","an ancient forest with giant twisted roots","a ruined stone temple overgrown with vines","a windswept battlefield littered with broken spears"],
+  sc:["a sword fight against a horde of enemies","a final duel with a towering boss","a charge across an open field","defending a castle gate under siege","an ambush in a misty forest"],
+  poses:["swinging a sword in a wide arc","drawing a bow at full tension","raising a shield against a heavy blow","charging forward with a battle cry","leaping into the air for a downward strike","parrying an incoming blade","rolling away from an attack","casting a glowing spell from an outstretched hand","bracing a spear against a charging enemy","kneeling after a strike, blade dripping with rain"],
+  fx:["sparks from clashing blades","embers and ash drifting in the air","rain streaks lit by firelight","dust kicked up by the fight","glowing magic particles"],weapon:"a melee weapon, bow or magic that fits the game",outfit:"period clothing and armor"},
+ scifi:{tr:"Bilim kurgu",kw:["science fiction","sci-fi","space","alien","futuristic","cyberpunk","robot","mech","planet","galaxy","dystopian","starship"],
+  bg:["a neon-drenched megacity street in the rain","the damaged interior of a spaceship with sparking panels","an alien planet surface under two moons","a futuristic research facility in lockdown","a rooftop above a glowing futuristic skyline"],
+  sc:["a firefight against an alien swarm","breaching a hostile starship","holding off combat robots","escaping as a facility explodes"],
+  poses:["firing a glowing energy weapon","activating a holographic gadget on the wrist","sprinting through laser fire","diving behind a metal crate","aiming down the sights of a futuristic rifle","shouting into a comms headset","leaping across a gap between platforms","covering a teammate while backing away"],
+  fx:["laser bolts and glowing tracers","holographic interfaces flickering","sparks and floating debris","neon reflections on wet surfaces"],weapon:"a futuristic weapon that fits the game",outfit:"futuristic clothing and gear"},
+ horror:{tr:"Korku / hayatta kalma",kw:["horror","zombie","undead","survival","monster","infected","post-apocalyptic","apocalypse","creature","outbreak"],
+  bg:["an abandoned hospital corridor with flickering lights","a fog-covered small town at night","a ruined highway full of abandoned cars","a dark forest cabin surrounded by trees","an overrun shopping mall"],
+  sc:["fighting off a horde of infected","escaping a monster in the dark","barricading a door as creatures break through","a last stand on a rooftop at dawn"],
+  poses:["swinging a melee weapon at an attacker","shining a flashlight into the darkness","backing away while aiming","pulling a teammate up while looking back","firing at a lunging creature","bracing a door shut","running through the fog","crouching and listening"],
+  fx:["drifting fog and dust","flickering light","blood-red emergency lights","rain and mud"],weapon:"an improvised or survival weapon that fits the game",outfit:"worn, dirty survival clothing"},
+ western:{tr:"Vahşi Batı",kw:["western","cowboy","frontier","outlaw","wild west","gunslinger"],
+  bg:["a dusty frontier main street","a red rock canyon at sunset","a wooden saloon interior","a ranch with horses and fences"],
+  sc:["a high-noon showdown","a train robbery","a horseback chase across the plains","a saloon shootout"],
+  poses:["drawing a revolver from the hip","fanning the hammer of a revolver","riding a galloping horse while firing","diving behind a water trough","aiming a lever-action rifle","kicking open saloon doors"],
+  fx:["dust clouds","gun smoke","sunlight beams through dust"],weapon:"a revolver or lever-action rifle",outfit:"Wild West clothing: hats, dusters, vests, boots"},
+ crime:{tr:"Suç / şehir",kw:["crime","gangster","heist","mafia","organized crime","police","criminal","robbery"],
+  bg:["a city street at night with police lights","a bank lobby with shattered glass","a parking garage","a rooftop over the city","the docks at night with containers"],
+  sc:["a bank heist getaway","a shootout with the police","a car chase through downtown","a deal gone wrong"],
+  poses:["firing from behind a car door","leaning out of a speeding car window","running with a bag of cash","aiming a pistol sideways","jumping over a car hood","shouting at the getaway driver"],
+  fx:["red and blue police lights","flying cash bills","shattered glass","muzzle flashes"],weapon:"a pistol, SMG or shotgun",outfit:"street or heist clothing"},
+ racing:{tr:"Yarış",kw:["racing","driving","motorsport","rally","drift","street racing","racing video game"],
+  bg:["a neon-lit city highway at night","a mountain road with hairpin turns","a desert rally track","a professional race circuit with grandstands"],
+  sc:["a neck-and-neck race at full speed","drifting through a tight corner","escaping a police chase on the highway","a photo finish"],
+  poses:["gripping the steering wheel at full speed","leaning on the car hood before the race","shifting gears with intense focus","shouting out of the window while overtaking","standing on the car roof celebrating"],
+  fx:["tire smoke","sparks from the road","motion blur","rain spray"],weapon:"their car",noWeapon:true,outfit:"racing or street style clothing"},
+ sports:{tr:"Spor",kw:["football","soccer","basketball","sports","association football","nba","fifa","tennis","hockey"],
+  bg:["a packed stadium under floodlights","a rain-soaked pitch","an indoor arena with a roaring crowd"],
+  sc:["a last-minute winning goal","a wild celebration after scoring","a dramatic tackle","a breakaway run"],
+  poses:["striking the ball mid-air","celebrating with arms spread wide","sliding into a tackle","sprinting with the ball","jumping for a header","high-fiving a teammate"],
+  fx:["flying grass and water droplets","stadium lights flaring","confetti","motion blur on the crowd"],weapon:"the ball",noWeapon:true,outfit:"team kits in the game's style"}
+};
+function sents(t,n){return (t||"").replace(/\s+/g," ").trim().split(/(?<=[.!?])\s+/).slice(0,n).join(" ")}
+function detectGenre(text){
+  text=(text||"").toLowerCase();let best="shooter",bs=0;
+  for(const [k,g] of Object.entries(GENRES)){let s=0;for(const w of g.kw){const m=text.split(w).length-1;s+=m}if(s>bs){bs=s;best=k}}
+  return best;
+}
 function reroll(tab){
   const S=state[tab];
   const t=S.time==="random"?pick(Object.keys(LIGHT)):S.time;
   rolls[tab]={light:pick(LIGHT[t]),cam:pick(CAM),fx:shuffle(FX).slice(0,2),form:pick(FORM),poses:shuffle(POSES),
     clothes:tab==="pubg"?shuffle(MAPS[S.map].clothes):[],vests:shuffle(VEST)};
-  if(tab==="diger"){const gd=gameData(S.game);rolls.diger.gd=gd;rolls.diger.bg=pick(gd?gd.bg:GENERIC_BG);rolls.diger.sc=pick(gd?gd.sc:GENERIC_SC);rolls.diger.gameKey=gd?gd.k[0]:""}
+  if(tab==="diger"){
+    const R=rolls.diger,gd=gameData(S.game),gi=gameInfo(),gk=gi?gi.genre:"shooter",G=GENRES[gk];
+    R.gd=gd;R.gameKey=gd?gd.k[0]:"";R.genre=gk;
+    R.bg=pick(gd?gd.bg:(G.bg||GENERIC_BG));R.sc=pick(gd?gd.sc:(G.sc||GENERIC_SC));
+    if(G.poses)R.poses=shuffle(G.poses.concat(gk==="scifi"?POSES:[]));
+    if(G.fx)R.fx=shuffle(G.fx).slice(0,2);
+  }
 }
 
 function sceneLine(S){
@@ -316,18 +367,25 @@ function buildDiger(){
   const ps=S.players.filter(p=>p.name.trim()),n=ps.length,L=[];
   L.push(`Create a photorealistic, cinematic action image of ${n===1?"one person":n+" people"}, inspired by the video game ${game}, shown as a real-life live-action movie still. Use the attached reference photos for their faces.`,"","REFERENCE PHOTOS");
   ps.forEach((p,i)=>L.push(`- Photo ${i+1} = ${p.name.trim()}`));
-  const gi=gameInfo();
-  L.push("","ABOUT THE GAME",gi?`${gi.title}: ${gi.text}`:`Look up ${game} (search the web if you can) to understand its setting, era, art direction and iconic locations.`,"Make the location, outfits, weapons and atmosphere feel true to this game.");
-  const loc=place?`${place}, in the world of ${game}`:(R.gd?R.bg+`, from the world of ${game}`:`an iconic, recognizable location from ${game} that matches its real setting (pick a different one each time)`);
+  const gi=gameInfo(),G=GENRES[R.genre]||GENRES.shooter;
+  if(gi){
+    L.push("","ABOUT THE GAME (research)",`Title: ${gi.title}. Genre: ${G.tr.split(" / ")[0]} (${R.genre}).`,`Overview: ${gi.overview}`);
+    if(gi.setting)L.push(`Setting: ${gi.setting}`);
+    if(gi.gameplay)L.push(`Gameplay: ${gi.gameplay}`);
+  }else L.push("","ABOUT THE GAME",`Look up ${game} (search the web if you can) to understand its genre, setting, era, art direction and iconic locations.`);
+  L.push("Use this research so the location, era, outfits, weapons, enemies and atmosphere feel true to this game.");
+  const loc=place?`${place}, in the world of ${game}`:(R.gd?R.bg+`, from the world of ${game}`:`an iconic, recognizable location from ${game} that matches its real setting; this time something like ${R.bg}`);
   L.push("","SETTING",`Location: ${loc}, recreated as a realistic real-world place.`,`Moment: ${R.sc}${R.gd?"":", in the style of "+game}.`,"","CHARACTERS");
   ps.forEach((p,i)=>{
-    const w=p.weapon.trim()?p.weapon.trim():"a weapon that fits the game";
-    const wear=outfit?`an outfit in this style: ${outfit} (written in Turkish, translate it), different from the others`:`an outfit that fits the world of ${game}, different from the others`;
-    L.push(`- ${p.name.trim()} (face from Photo ${i+1}): holding ${w} (may be written in Turkish, translate it), pose idea: ${R.poses[i%R.poses.length]} (adapt it if it doesn't fit the scene). Wearing ${wear}${S.vest?`, with ${R.vests[i%R.vests.length]} over it. No helmet.`:"."}`);
+    const w=p.weapon.trim()?p.weapon.trim():G.weapon;
+    const wear=outfit?`an outfit in this style: ${outfit} (written in Turkish, translate it), different from the others`:`${G.outfit||"an outfit"} that fits the world of ${game}, different from the others`;
+    L.push(`- ${p.name.trim()} (face from Photo ${i+1}): ${G.noWeapon&&!p.weapon.trim()?"with":"holding"} ${w} (may be written in Turkish, translate it), pose idea: ${R.poses[i%R.poses.length]} (adapt it if it doesn't fit the scene). Wearing ${wear}${S.vest?`, with ${R.vests[i%R.vests.length]} over it. No helmet.`:"."}`);
   });
+  if(n>4)R.form=`a large group of ${n} people arranged in layers from foreground to background so every single face is visible`;
   cameraBlock(L,R);
-  L.push("","MUST FOLLOW",...RULES_BASE,
-    outfit?"- Clothing: every character's outfit is clearly different from the others while following the requested style.":`- Clothing: every character's outfit is clearly different and fits the world of ${game}.`);
+  L.push("","MUST FOLLOW",...RULES_BASE);
+  if(n>4)L.push(`- There are exactly ${n} people. All ${n} faces must be visible, recognizable and match their photos. Do not add extra people from the squad, and do not drop anyone.`);
+  L.push(outfit?"- Clothing: every character's outfit is clearly different from the others while following the requested style.":`- Clothing: every character's outfit is clearly different and fits the world of ${game}.`);
   if(S.vest)L.push("- No helmets on anyone. Everyone wears a military steel plate carrier vest.");
   L.push(RULE_TEXT);
   return {text:L.join("\n"),meta:`${S.game.trim()||"Oyun"} · ${n} kişi`};
@@ -344,22 +402,30 @@ async function lookupGame(name){
     const s=await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=1&format=json&origin=*&srsearch="+encodeURIComponent(q+" video game")).then(r=>r.json());
     const hit=s&&s.query&&s.query.search&&s.query.search[0];
     if(hit){
-      const p=await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(hit.title.replace(/ /g,"_"))).then(r=>r.json());
-      if(p&&p.extract)info={title:p.title,text:p.extract.split(/(?<=\.)\s+/).slice(0,4).join(" ")};
+      const d=await fetch("https://en.wikipedia.org/w/api.php?action=query&prop=extracts|categories&explaintext=1&cllimit=max&clshow=!hidden&redirects=1&format=json&origin=*&titles="+encodeURIComponent(hit.title)).then(r=>r.json());
+      const pg=Object.values((d.query&&d.query.pages)||{})[0];
+      if(pg&&pg.extract){
+        const parts=pg.extract.split(/\n=+\s*([^=\n]+?)\s*=+\n/);
+        const sec={};for(let i=1;i<parts.length;i+=2){const k=parts[i].toLowerCase();if(!sec[k])sec[k]=parts[i+1]||""}
+        const cats=(pg.categories||[]).map(c=>c.title).join(" ");
+        const setting=sec["setting"]||sec["synopsis"]||sec["plot"]||sec["premise"]||sec["story"]||"";
+        info={title:pg.title,overview:sents(parts[0],3),setting:sents(setting,3),gameplay:sents(sec["gameplay"],2),
+          genre:detectGenre(cats+" "+cats+" "+cats+" "+parts[0]+" "+(sec["gameplay"]||"").slice(0,2000))};
+      }
     }
   }catch(e){}
   WIKI[key]=info;
-  if(state.diger.game.trim().toLowerCase()===key){showWiki(info);if(state.tab==="diger")update(false)}
+  if(state.diger.game.trim().toLowerCase()===key){showWiki(info);delete rolls.diger;if(state.tab==="diger")update(false)}
 }
 function showWiki(info){
-  $("gameinfo").innerHTML=info?`<b>Bulunan oyun: ${esc(info.title)}</b><br>${esc(info.text)}`:"Bu oyun hakkında bilgi bulunamadı. Tarif, ChatGPT'den oyunu kendisinin araştırmasını istiyor.";
+  $("gameinfo").innerHTML=info?`<b>Bulunan oyun: ${esc(info.title)}</b> · Tür: <b>${esc(GENRES[info.genre].tr)}</b><br>${esc(info.overview)}`:"Bu oyun hakkında bilgi bulunamadı. Tarif, ChatGPT'den oyunu kendisinin araştırmasını istiyor.";
 }
 function gameInfo(){return WIKI[state.diger.game.trim().toLowerCase()]||null}
 
 function update(newRoll){
   const tab=state.tab;
   if(newRoll||!rolls[tab])reroll(tab);
-  else if(tab==="diger"){const gd=gameData(state.diger.game);if((gd?gd.k[0]:"")!==rolls.diger.gameKey)reroll(tab)}
+  else if(tab==="diger"){const gd=gameData(state.diger.game),gi=gameInfo();if((gd?gd.k[0]:"")!==rolls.diger.gameKey||(gi?gi.genre:"shooter")!==rolls.diger.genre)reroll(tab)}
   const r=tab==="pubg"?buildPubg():buildDiger();
   $("prompt").textContent=r.text;
   $("varno").textContent="#"+String(variant[tab]).padStart(2,"0");
@@ -395,7 +461,7 @@ function init(){
   $("time-diger").addEventListener("change",e=>{D.time=e.target.value;update(true)});
 
   ["pubg","diger"].forEach(tab=>{
-    $("add-"+tab).addEventListener("click",()=>{const S=state[tab];if(S.players.length<4){S.players.push({name:"Oyuncu "+(S.players.length+1),weapon:tab==="pubg"?pick(WEAPONS.slice(0,20)):""});renderPlayers(tab);update(false)}});
+    $("add-"+tab).addEventListener("click",()=>{const S=state[tab];if(S.players.length<MAXP[tab]){S.players.push({name:"Oyuncu "+(S.players.length+1),weapon:tab==="pubg"?pick(WEAPONS.slice(0,20)):""});renderPlayers(tab);update(false)}});
     renderPlayers(tab);
   });
 
