@@ -123,6 +123,7 @@ button:hover{border-color:var(--muted)}
             <label for="place">Mekan (boş bırakırsan her seferinde farklı)<input id="place" placeholder="ör. Verdansk stadyumu"></label>
           </div>
           <div class="gameinfo" id="gameinfo" role="status"></div>
+          <div class="row2"><label for="genre">Oyun türü<select id="genre"></select></label></div>
         </div>
         <div class="sec">
           <h2>Kadro <span class="refs" id="count-diger"></span></h2>
@@ -239,7 +240,7 @@ const VEST=["a black steel plate carrier vest with magazine pouches","a worn tan
 const KEY="squadKapak.v2";
 let state={tab:"pubg",
   pubg:{players:[{name:"Semih",weapon:"M416"},{name:"Oyuncu 2",weapon:"Kar98k"},{name:"Oyuncu 3",weapon:"Micro UZI"}],map:"Erangel",spot:"Pochinki",scene:"",time:"random"},
-  diger:{game:"Call of Duty Warzone",place:"",players:[{name:"Semih",weapon:"M4"},{name:"Oyuncu 2",weapon:"pompalı tüfek"}],outfit:"",vest:false,scene:"",time:"random"}};
+  diger:{game:"Call of Duty Warzone",place:"",players:[{name:"Semih",weapon:"M4"},{name:"Oyuncu 2",weapon:"pompalı tüfek"}],outfit:"",vest:false,scene:"",time:"random",genre:"auto"}};
 try{
   const s=JSON.parse(localStorage.getItem(KEY)||"null");
   if(s){if(s.tab)state.tab=s.tab;if(s.pubg)Object.assign(state.pubg,s.pubg);if(s.diger)Object.assign(state.diger,s.diger)}
@@ -308,6 +309,16 @@ const GENRES={
   sc:["a neck-and-neck race at full speed","drifting through a tight corner","escaping a police chase on the highway","a photo finish"],
   poses:["gripping the steering wheel at full speed","leaning on the car hood before the race","shifting gears with intense focus","shouting out of the window while overtaking","standing on the car roof celebrating"],
   fx:["tire smoke","sparks from the road","motion blur","rain spray"],weapon:"their car",noWeapon:true,outfit:"racing or street style clothing"},
+ adventure:{tr:"Macera / keşif",kw:["adventure","exploration","explore","nature","animal","dog","wilderness","journey","puzzle","platform","walking simulator","herding","farm","sheep"],
+  bg:["a wide mountain valley at sunrise","a misty pine forest with a winding trail","a wild meadow under a stormy sky","a rocky cliff path above a river","a remote village at the edge of the wilderness","rolling hills with stone walls and grazing animals"],
+  sc:["an adventurous trek through dangerous terrain","a race against an incoming storm","a daring rescue","a breathtaking moment of discovery"],
+  poses:["climbing over rocks","running along a narrow ridge","pointing toward something in the distance","pulling a teammate up a ledge","crossing a rushing stream","shielding eyes against the wind","leaping across a gap","whistling and signaling to an animal"],
+  fx:["wind-blown grass and leaves","sun rays through mist","rain and mud splashes","drifting fog"],weapon:"a tool or item that fits the game",noWeapon:true,outfit:"outdoor clothing"},
+ unknown:{tr:"Bilinmiyor (ChatGPT araştırsın)",kw:[],
+  bg:["the game's most recognizable location","a signature place from the game's world","a dramatic landscape typical of the game"],
+  sc:["the most exciting, characteristic moment of the game","a dramatic moment that captures what the game is about"],
+  poses:["in a dynamic action pose typical of the game","moving fast through the scene","reacting to a dramatic event","leading the way forward","glancing back toward the camera mid-action","bracing against danger"],
+  fx:["dust and particles in the air","dramatic light rays","motion blur on the background"],weapon:"whatever item or tool characters use in this game (a weapon only if the game has weapons)",noWeapon:true,outfit:"clothing"},
  sports:{tr:"Spor",kw:["football","soccer","basketball","sports","association football","nba","fifa","tennis","hockey"],
   bg:["a packed stadium under floodlights","a rain-soaked pitch","an indoor arena with a roaring crowd"],
   sc:["a last-minute winning goal","a wild celebration after scoring","a dramatic tackle","a breakaway run"],
@@ -316,7 +327,7 @@ const GENRES={
 };
 function sents(t,n){return (t||"").replace(/\s+/g," ").trim().split(/(?<=[.!?])\s+/).slice(0,n).join(" ")}
 function detectGenre(text){
-  text=(text||"").toLowerCase();let best="shooter",bs=0;
+  text=(text||"").toLowerCase();let best="unknown",bs=0;
   for(const [k,g] of Object.entries(GENRES)){let s=0;for(const w of g.kw){const m=text.split(w).length-1;s+=m}if(s>bs){bs=s;best=k}}
   return best;
 }
@@ -326,7 +337,7 @@ function reroll(tab){
   rolls[tab]={light:pick(LIGHT[t]),cam:pick(CAM),fx:shuffle(FX).slice(0,2),form:pick(FORM),poses:shuffle(POSES),
     clothes:tab==="pubg"?shuffle(MAPS[S.map].clothes):[],vests:shuffle(VEST)};
   if(tab==="diger"){
-    const R=rolls.diger,gd=gameData(S.game),gi=gameInfo(),gk=gi?gi.genre:"shooter",G=GENRES[gk];
+    const R=rolls.diger,gd=gameData(S.game),gk=curGenre(),G=GENRES[gk];
     R.gd=gd;R.gameKey=gd?gd.k[0]:"";R.genre=gk;
     R.bg=pick(gd?gd.bg:(G.bg||GENERIC_BG));R.sc=pick(gd?gd.sc:(G.sc||GENERIC_SC));
     if(G.poses)R.poses=shuffle(G.poses.concat(gk==="scifi"?POSES:[]));
@@ -367,13 +378,15 @@ function buildDiger(){
   const ps=S.players.filter(p=>p.name.trim()),n=ps.length,L=[];
   L.push(`Create a photorealistic, cinematic action image of ${n===1?"one person":n+" people"}, inspired by the video game ${game}, shown as a real-life live-action movie still. Use the attached reference photos for their faces.`,"","REFERENCE PHOTOS");
   ps.forEach((p,i)=>L.push(`- Photo ${i+1} = ${p.name.trim()}`));
-  const gi=gameInfo(),G=GENRES[R.genre]||GENRES.shooter;
+  const gi=gameInfo(),G=GENRES[R.genre]||GENRES.unknown;
+  L.push("","STEP 1 — RESEARCH THE GAME FIRST",`Before creating the image, search the web for the video game "${game}" and briefly analyze it: genre, setting and era, art style, main characters, what players actually do, and its most recognizable locations, gear and atmosphere. Base every visual choice below on that research; if a detail below conflicts with the real game, follow the real game.`);
   if(gi){
-    L.push("","ABOUT THE GAME (research)",`Title: ${gi.title}. Genre: ${G.tr.split(" / ")[0]} (${R.genre}).`,`Overview: ${gi.overview}`);
+    L.push(`Starting notes (Wikipedia, ${gi.title}): ${gi.overview}`);
     if(gi.setting)L.push(`Setting: ${gi.setting}`);
     if(gi.gameplay)L.push(`Gameplay: ${gi.gameplay}`);
-  }else L.push("","ABOUT THE GAME",`Look up ${game} (search the web if you can) to understand its genre, setting, era, art direction and iconic locations.`);
-  L.push("Use this research so the location, era, outfits, weapons, enemies and atmosphere feel true to this game.");
+  }
+  if(R.genre!=="unknown")L.push(`Genre: ${R.genre}.`);
+  L.push("","STEP 2 — CREATE THE IMAGE");
   const loc=place?`${place}, in the world of ${game}`:(R.gd?R.bg+`, from the world of ${game}`:`an iconic, recognizable location from ${game} that matches its real setting; this time something like ${R.bg}`);
   L.push("","SETTING",`Location: ${loc}, recreated as a realistic real-world place.`,`Moment: ${R.sc}${R.gd?"":", in the style of "+game}.`,"","CHARACTERS");
   ps.forEach((p,i)=>{
@@ -425,14 +438,15 @@ async function lookupGame(name){
   if(state.diger.game.trim().toLowerCase()===key){showWiki(info);delete rolls.diger;if(state.tab==="diger")update(false)}
 }
 function showWiki(info){
-  $("gameinfo").innerHTML=info?`<b>Bulunan oyun: ${esc(info.title)}</b> · Tür: <b>${esc(GENRES[info.genre].tr)}</b><br>${esc(info.overview)}`:"Bu oyun hakkında bilgi bulunamadı. Tarif, ChatGPT'den oyunu kendisinin araştırmasını istiyor.";
+  $("gameinfo").innerHTML=info?`<b>Bulunan oyun: ${esc(info.title)}</b> · Tür: <b>${esc(GENRES[info.genre].tr)}</b><br>${esc(info.overview)}`:"Wikipedia'da bulunamadı. Sorun değil: tarif, ChatGPT'ye oyunu önce internetten araştırıp analiz etmesini söylüyor. Türünü biliyorsan aşağıdan seçersen sahne ve pozlar da ona göre olur.";
 }
+function curGenre(){const m=state.diger.genre;if(m&&m!=="auto"&&GENRES[m])return m;const gi=gameInfo();return gi?gi.genre:"unknown"}
 function gameInfo(){return WIKI[state.diger.game.trim().toLowerCase()]||null}
 
 function update(newRoll){
   const tab=state.tab;
   if(newRoll||!rolls[tab])reroll(tab);
-  else if(tab==="diger"){const gd=gameData(state.diger.game),gi=gameInfo();if((gd?gd.k[0]:"")!==rolls.diger.gameKey||(gi?gi.genre:"shooter")!==rolls.diger.genre)reroll(tab)}
+  else if(tab==="diger"){const gd=gameData(state.diger.game);if((gd?gd.k[0]:"")!==rolls.diger.gameKey||curGenre()!==rolls.diger.genre)reroll(tab)}
   const r=tab==="pubg"?buildPubg():buildDiger();
   $("prompt").textContent=r.text;
   $("varno").textContent="#"+String(variant[tab]).padStart(2,"0");
@@ -454,7 +468,8 @@ function init(){
   document.querySelectorAll(".timesel").forEach(s=>s.innerHTML=Object.entries(TIMES).map(([k,v])=>`<option value="${k}">${v}</option>`).join(""));
   const P=state.pubg,D=state.diger;
   $("map").value=P.map;$("spot").value=P.spot;$("scene-pubg").value=P.scene||"";$("time-pubg").value=P.time;
-  $("game").value=D.game;$("place").value=D.place;$("outfit").value=D.outfit;$("vest").checked=!!D.vest;$("time-diger").value=D.time;
+  $("game").value=D.game;$("place").value=D.place;$("outfit").value=D.outfit;$("vest").checked=!!D.vest;
+  $("genre").innerHTML='<option value="auto">Otomatik (araştırmaya göre)</option>'+Object.entries(GENRES).filter(([k])=>k!=="unknown").map(([k,g])=>`<option value="${k}">${g.tr}</option>`).join("");$("genre").value=D.genre||"auto";$("time-diger").value=D.time;
   const fillSpots=()=>{$("spots").innerHTML=MAPS[P.map].spots.map(s=>`<option value="${s}">`).join("")};fillSpots();
 
   $("map").addEventListener("change",e=>{P.map=e.target.value;P.spot="";$("spot").value="";fillSpots();update(true)});
@@ -465,6 +480,7 @@ function init(){
   $("place").addEventListener("input",e=>{D.place=e.target.value;update(false)});
   $("outfit").addEventListener("input",e=>{D.outfit=e.target.value;update(false)});
   $("vest").addEventListener("change",e=>{D.vest=e.target.checked;update(false)});
+  $("genre").addEventListener("change",e=>{D.genre=e.target.value;update(true)});
   $("time-diger").addEventListener("change",e=>{D.time=e.target.value;update(true)});
 
   ["pubg","diger"].forEach(tab=>{
