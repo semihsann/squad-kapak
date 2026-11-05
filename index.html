@@ -399,8 +399,15 @@ async function lookupGame(name){
   box.textContent="Oyun aranıyor…";
   let info=null;
   try{
-    const s=await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=1&format=json&origin=*&srsearch="+encodeURIComponent(q+" video game")).then(r=>r.json());
-    const hit=s&&s.query&&s.query.search&&s.query.search[0];
+    const s=await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=8&format=json&origin=*&srsearch="+encodeURIComponent(q+" video game")).then(r=>r.json());
+    const ql=key.replace(/[^a-z0-9]/g,"");
+    const score=h=>{const t=h.title.toLowerCase(),sn=(h.snippet||"").toLowerCase();let v=0;
+      if(/video game/.test(sn))v+=3;else if(/\bgame\b/.test(sn))v+=1;
+      if(/\((\d{4} )?video game\)/.test(t))v+=3;else if(/\(/.test(t))v-=4;
+      if(t.replace(/\s*\(.*\)$/,"").replace(/[^a-z0-9]/g,"")===ql)v+=3;
+      if(/^list of|series\b|soundtrack|film|novel/.test(t))v-=3;return v};
+    const hits=(s&&s.query&&s.query.search)||[];
+    const hit=hits.slice().sort((a,b)=>score(b)-score(a))[0];
     if(hit){
       const d=await fetch("https://en.wikipedia.org/w/api.php?action=query&prop=extracts|categories&explaintext=1&cllimit=max&clshow=!hidden&redirects=1&format=json&origin=*&titles="+encodeURIComponent(hit.title)).then(r=>r.json());
       const pg=Object.values((d.query&&d.query.pages)||{})[0];
