@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#12151a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Squad Kapak Atölyesi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: tab bar on top, then a two-column workbench — form on the left, live prompt pinned on the right; stacks on phones. Deliberately dark-only (game night). */
+:root{
+  --bg:#12151a; --panel:#1a1f26; --panel2:#222831; --line:#2f3742;
+  --fg:#e7e3d8; --muted:#9aa1a9; --sand:#c9b58a; --zone:#3d8bff; --zone-soft:rgba(61,139,255,.14); --ok:#5fc48a;
+  --display:"Chakra Petch","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}body{margin:0}[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:22px}
+header h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4.4vw,44px);letter-spacing:.02em;line-height:1.05;margin:0;text-transform:uppercase;text-wrap:balance}
+header h1 span{color:var(--zone)}
+header p{color:var(--muted);margin:8px 0 0;max-width:62ch}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{font-family:var(--display);font-size:15px;letter-spacing:.08em;text-transform:uppercase;background:none;border:0;border-bottom:3px solid transparent;border-radius:0;color:var(--muted);padding:10px 16px 9px;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--zone)}
+.tabs button:hover{color:var(--fg)}
+.tabs small{font-family:var(--mono);font-size:11px;color:var(--sand);margin-right:6px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:24px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+section{display:grid;gap:14px}
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px;display:grid;gap:14px}
+.sec h2{font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--sand);margin:0;display:flex;justify-content:space-between;align-items:center}
+label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:grid;gap:5px}
+textarea{resize:vertical;min-height:96px;line-height:1.45}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:9px 10px;width:100%;min-width:0;text-transform:none;letter-spacing:0}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--zone);outline-offset:1px}
+.check{display:flex;gap:10px;align-items:center;text-transform:none;letter-spacing:0;font-size:14px;color:var(--fg)}
+.check input{width:18px;height:18px;accent-color:var(--zone)}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:480px){.row2{grid-template-columns:minmax(0,1fr)}}
+.plist{display:grid;gap:8px}
+.player{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(0,1fr) 34px;gap:8px;align-items:center}
+.slot{font-family:var(--mono);font-size:12px;width:34px;height:38px;display:grid;place-items:center;border:1px solid var(--line);border-radius:4px;color:var(--sand)}
+.player.me .slot{background:var(--zone-soft);border-color:var(--zone);color:var(--zone)}
+@media (max-width:480px){.player{grid-template-columns:34px minmax(0,1fr) 34px}.player .w{grid-column:2/3}}
+button{font:inherit;cursor:pointer;border-radius:4px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);padding:9px 14px}
+button:hover{border-color:var(--muted)}
+.icon{width:34px;height:38px;padding:0;color:var(--muted)}
+.add{justify-self:start;font-size:13px}
+.out{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:grid;gap:12px}
+.brief{background:#0c0e12;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.brief-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--muted);flex-wrap:wrap}
+.brief-head b{color:var(--sand);font-weight:500}
+#prompt{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word;margin:0;padding:16px;max-height:62vh;overflow:auto;color:#d9dde2}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.primary{background:var(--zone);border-color:var(--zone);color:#fff;font-weight:600}
+.primary:hover{border-color:#fff}
+.shuffle{font-family:var(--display);letter-spacing:.06em;text-transform:uppercase}
+.toast{font-size:13px;color:var(--ok);align-self:center;min-height:1em}
+.steps{margin:0;padding-left:20px;color:var(--muted);font-size:14px;display:grid;gap:4px}
+.steps b{color:var(--fg);font-weight:600}
+.refs{font-family:var(--mono);font-size:12px;color:var(--sand)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+@media (prefers-reduced-motion:no-preference){#prompt.flash{animation:fl .5s ease}@keyframes fl{from{background:#14233a}to{background:transparent}}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Squad Kapak <span>Atölyesi</span></h1>
+    <p>Kimin oynadığını, silahları, mekanı ve sahneyi yaz. Her basışta farklı bir sahne tarifi çıkar; kopyalayıp ChatGPT'ye fotoğraflarla birlikte yapıştır.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Oyun">
+    <button role="tab" id="tab-pubg" data-tab="pubg" aria-controls="panel-pubg" type="button"><small>1</small>PUBG</button>
+    <button role="tab" id="tab-diger" data-tab="diger" aria-controls="panel-diger" type="button"><small>2</small>Diğer oyunlar</button>
+  </div>
+
+  <div class="grid">
+    <div>
+      <!-- PUBG -->
+      <section id="panel-pubg" role="tabpanel" aria-labelledby="tab-pubg">
+        <div class="sec">
+          <h2>Kadro <span class="refs" id="count-pubg"></span></h2>
+          <div class="plist" id="players-pubg"></div>
+          <button class="add" id="add-pubg" type="button">+ Oyuncu ekle</button>
+          <p class="hint">Sıra önemli: 1 numara ChatGPT'ye yüklediğin 1. fotoğraf, 2 numara 2. fotoğraf olur.</p>
+        </div>
+        <div class="sec">
+          <h2>Harita ve mevki</h2>
+          <div class="row2">
+            <label for="map">Harita<select id="map"></select></label>
+            <label for="spot">Mevki<input id="spot" list="spots" placeholder="ör. Pochinki kilise çatısı"></label>
+            <datalist id="spots"></datalist>
+          </div>
+        </div>
+        <div class="sec">
+          <h2>Sahne</h2>
+          <label for="scene-pubg">Ne oluyor? (kabataslak, Türkçe yazabilirsin)<textarea id="scene-pubg" placeholder="ör. son çemberde kayaların arkasındayız, Semih çatıdaki adamı vuruyor, arkadan araba geliyor"></textarea></label>
+          <div class="row2"><label for="time-pubg">Zaman<select id="time-pubg" class="timesel"></select></label></div>
+        </div>
+      </section>
+
+      <!-- DİĞER OYUNLAR -->
+      <section id="panel-diger" role="tabpanel" aria-labelledby="tab-diger" hidden>
+        <div class="sec">
+          <h2>Oyun ve mekan</h2>
+          <div class="row2">
+            <label for="game">Oyun<input id="game" list="games" placeholder="ör. Call of Duty Warzone"></label>
+            <datalist id="games"></datalist>
+            <label for="place">Mekan (boş bırakırsan her seferinde farklı)<input id="place" placeholder="ör. Verdansk stadyumu"></label>
+          </div>
+        </div>
+        <div class="sec">
+          <h2>Kadro <span class="refs" id="count-diger"></span></h2>
+          <div class="plist" id="players-diger"></div>
+          <button class="add" id="add-diger" type="button">+ Oyuncu ekle</button>
+          <p class="hint">Silah yerine eşya da yazabilirsin (kılıç, yay, kazma, araba…). Sıra yine fotoğraf sırası.</p>
+        </div>
+        <div class="sec">
+          <h2>Görünüm</h2>
+          <label for="outfit">Kıyafet tarzı (boş bırakırsan oyuna uygun, herkes farklı)<input id="outfit" placeholder="ör. sokak kıyafetleri, takım elbise, kovboy"></label>
+          <label class="check" for="vest"><input type="checkbox" id="vest"> Kask yok, askeri çelik yelek var</label>
+        </div>
+        <div class="sec">
+          <h2>Sahne</h2>
+          <p class="hint">Sahneyi, arka planı, pozları ve kamera açısını oyuna göre ben seçiyorum. <b>Yeni sahne</b>'ye her basışta hepsi değişir.</p>
+          <div class="row2"><label for="time-diger">Zaman<select id="time-diger" class="timesel"></select></label></div>
+        </div>
+      </section>
+
+      <div class="sec" style="margin-top:14px">
+        <h2>Nasıl kullanılır</h2>
+        <ol class="steps">
+          <li>ChatGPT'de yeni sohbet aç, oyuncuların fotoğraflarını <b>kadrodaki sırayla</b> yükle.</li>
+          <li>Sahne kutusuna ne olduğunu kabaca yaz.</li>
+          <li>Sağdaki tarifi <b>Kopyala</b> ile alıp fotoğrafların yanına yapıştır.</li>
+          <li>Beğenmezsen <b>Yeni sahne</b>'ye bas, aynı bilgilerle farklı bir tarif çıkar.</li>
+          <li>Görseli Canva şablonuna arka plan olarak koy. ChatGPT bazen 1536x1024 verir; Canva'da 1920x1080'e büyütmen yeterli.</li>
+        </ol>
+      </div>
+    </div>
+
+    <section class="out" aria-label="Tarif">
+      <div class="brief">
+        <div class="brief-head"><span>TARİF <b id="varno"></b></span><span id="meta"></span></div>
+        <pre id="prompt" tabindex="0"></pre>
+      </div>
+      <div class="actions">
+        <button class="primary" id="copyBtn" type="button">Kopyala</button>
+        <button class="shuffle" id="shuffleBtn" type="button">Yeni sahne</button>
+        <span class="toast" id="toast" role="status"></span>
+      </div>
+      <p class="hint">Tarif İngilizce yazılıyor; görsel yapay zekâları İngilizce tarifi daha isabetli uyguluyor. Senin istediğin sabit kurallar her tarifin sonunda var.</p>
+    </section>
+  </div>
+</div>
+
+<datalist id="weapons"></datalist>
+
+<script>
+const WEAPONS=["M416","AKM","Beryl M762","SCAR-L","AUG","Groza","ACE32","M16A4","QBZ","G36C","Mk47 Mutant","FAMAS","UMP45","Vector","Micro UZI","Tommy Gun","P90","MP5K","PP-19 Bizon","Kar98k","M24","AWM","Mosin Nagant","Lynx AMR","SKS","SLR","Mini 14","Mk14","Mk12","Dragunov","VSS","S12K","S1897","DBS","S686","M249","DP-28","MG3","Crossbow","Tava (Pan)"];
+const WEAPON_EN={"Tava (Pan)":"a frying pan used as a melee weapon"};
+const GAMES=["Call of Duty Warzone","Call of Duty Black Ops","Battlefield 6","Counter-Strike 2","Valorant","Apex Legends","Fortnite","Rainbow Six Siege","Escape from Tarkov","Arena Breakout","Delta Force","The Finals","GTA V","Red Dead Redemption 2","Rust","DayZ","Hunt: Showdown","Ready or Not","Helldivers 2","Minecraft"];
+
+const MAPS={
+ Erangel:{env:"an Eastern European island countryside: green rolling fields, birch forests, weathered brick and concrete Soviet-era buildings",
+  spots:["Pochinki","School","Military Base köprüsü","Georgopol konteynerleri","Rozhok tepesi","Yasnaya Polyana","Mylta Power","Sosnovka köprüsü","Novorepnoye limanı"],
+  clothes:["a faded denim jacket over a grey hoodie and dark jeans","a red-and-black flannel shirt with brown work trousers","a black leather biker jacket and ripped jeans","a white track jacket with navy stripes and matching track pants","a brown suede jacket over a cream sweater and corduroy pants","a dark green rain windbreaker over a white t-shirt and jeans","a burgundy knit sweater with charcoal chinos"]},
+ Miramar:{env:"a sun-scorched desert with dusty adobe towns, cactus, cracked earth and rocky mesas",
+  spots:["Pecado arena","Los Leones","Hacienda del Patrón","El Pozo","San Martín","Prison","Water Treatment","Campo Militar"],
+  clothes:["a sun-faded linen shirt with rolled sleeves and khaki chinos","a white tank top, red bandana around the neck and worn desert jeans","a short-sleeve western snap shirt with boot-cut jeans","a light tan canvas jacket with a black t-shirt and sunglasses pushed up on the head","a sleeveless denim vest over a sand-colored shirt","a loose terracotta poncho-style overshirt with dark trousers","a striped short-sleeve bowling shirt with dusty jeans"]},
+ Sanhok:{env:"a humid tropical jungle island with dense palms, muddy trails, river crossings and old stone ruins",
+  spots:["Bootcamp","Paradise Resort","Ruins","Camp Alpha","Docks","Pai Nan","Ha Tinh","Quarry"],
+  clothes:["a floral Hawaiian shirt with rolled-up light trousers","a sweat-soaked sleeveless tee with knee-length board shorts","a light blue linen shirt with quick-dry hiking pants","a white tank top with a loose open beach shirt","a yellow rain jacket tied at the waist over a grey tee","a faded orange surf t-shirt with cargo pants"]},
+ Vikendi:{env:"a snowy alpine island with pine forests, frozen lakes, wooden chalets and drifting snow",
+  spots:["Castle","Cosmodrome","Dino Park","Volnova","Goroka","Trevno","Podvosto"],
+  clothes:["a black puffer jacket with a grey knit beanie","a thick cable-knit wool sweater with a red scarf","a navy wool peacoat with a turtleneck","a bright orange ski jacket with dark snow pants","a cream shearling-lined denim jacket","a checkered lumberjack coat with a knit beanie"]},
+ Taego:{env:"a Korean countryside from the 1980s-90s: rice paddies, traditional hanok rooftops, mountains and retro town streets",
+  spots:["Ho San","Palace","Terminal","Go Dok","Hospital","Wol Song","Kang Neung"],
+  clothes:["a retro varsity jacket with straight-leg jeans","a 90s color-block windbreaker tracksuit","a double-denim outfit with a white tee","a beige knit cardigan over a collared shirt","a navy school-style blazer with loosened tie","a vintage bomber jacket and pleated trousers"]},
+ Deston:{env:"a storm-battered modern coastal city with glass skyscrapers, flooded streets and nearby swampland",
+  spots:["Ripton gökdelenleri","Concert Hall","Arena","bataklık kıyısı","baraj","otoyol köprüsü"],
+  clothes:["a black techwear windbreaker with joggers","an oversized streetwear hoodie and cargo pants","a grey business suit jacket over a hoodie","a yellow raincoat with dark jeans","a white bomber jacket with black chinos","a denim trucker jacket over a striped shirt"]},
+ Rondo:{env:"a modern East Asian region with neon-lit city streets, factories, stadiums and misty karst mountains",
+  spots:["Jadena City","NEOX Factory","Stadium","Rin Jiang","Tin Long Garden","Yu Lin"],
+  clothes:["a satin souvenir jacket with black jeans","a minimalist grey trench coat over a black tee","a red streetwear windbreaker and joggers","a white linen mandarin-collar shirt with dark trousers","a black puffer vest over a long-sleeve tee","a pastel oversized hoodie with cargo pants"]},
+ Karakin:{env:"a rocky North African island with sandstone villages, cliffs, dry riverbeds and blinding sun",
+  spots:["Bashara","Al Habar","Hadiqa Nemo","Bahr Sahir","Cargo Ship"],
+  clothes:["a lightweight beige shirt with a patterned shemagh scarf","a white linen kaftan-style shirt with tan trousers","a dusty brown work jacket with jeans","a sleeveless dark tee with sand-colored cargo pants","an olive-brown overshirt (civilian, not uniform) with light jeans"]},
+ Paramo:{env:"Andean volcanic highlands with misty ridges, lava rock, ancient ruins and small mountain villages",
+  spots:["Antigua ruins","volkan krateri","köy meydanı","dağ geçidi"],
+  clothes:["a woven Andean-pattern jacket with dark trousers","a thick alpaca wool sweater and jeans","a red fleece pullover with hiking pants","a long brown leather duster coat","a grey hooded rain shell with a knit beanie"]}
+};
+
+const GAME_DATA=[
+ {k:["warzone","call of duty","black ops","cod"],bg:["the ruined Verdansk stadium with collapsed stands","a downtown city block with burning cars and a crashed helicopter","a dam with spillways and concrete walkways","an airport runway with a cargo plane on fire","a prison yard with guard towers and searchlights","rooftops of a dense Eastern European city with a gas wall approaching"],sc:["the squad extracting from a hot zone while a helicopter lands","a fight over a supply drop with red smoke","the final circle with a toxic gas wall closing in","a rooftop battle with enemies on the next building"]},
+ {k:["battlefield"],bg:["a city street mid-collapse with a skyscraper falling in the background","an open battlefield with tanks and jets overhead","a destroyed industrial port with cranes","a snowy mountain pass with artillery explosions","a desert town during an all-out war with helicopters"],sc:["an all-out assault with tanks rolling beside the squad","a building collapsing behind the squad as they run","capturing an objective flag under heavy fire","jets screaming overhead during a frontal push"]},
+ {k:["counter-strike","cs2","cs:go","csgo"],bg:["the sandy Middle Eastern streets of Dust II with long corridors and wooden doors","a tight Italian-style village with narrow alleys","a modern office building interior with shattered windows","a Moroccan-style bombsite with arches","a Nordic industrial site with containers"],sc:["a bomb defusal clutch with a blinking bomb on the ground","a site retake through smoke grenades","an entry through a doorway with flashbangs going off","holding an angle as an enemy rushes in"]},
+ {k:["valorant"],bg:["a futuristic Venice-style canal city","a high-tech Japanese street with cherry blossoms","a desert research facility with a glowing spike device","a Moroccan bazaar with colorful fabric awnings","an icy high-tech base"],sc:["planting a glowing spike device under fire","a round-winning clutch with abilities glowing in the air","a rush through a smoke wall","a sniper duel down a long corridor"]},
+ {k:["apex"],bg:["an alien canyon world with giant creatures in the distance","a volcanic world with lava rivers","a frozen world with icy cliffs and a crashed ship","a futuristic arena city with neon lights","a tropical island with a ring of energy closing"],sc:["ziplining into a fight","a squad wipe with a supply ship landing","respawning a teammate at a beacon","the final ring collapsing in sci-fi energy"]},
+ {k:["fortnite"],bg:["a colorful island town with cartoonish houses turned realistic","a jungle temple with vines","a snowy village at night","a big waterfront city with a lighthouse","rolling meadows with a giant storm wall"],sc:["building ramps of wooden walls during a fight","landing from a glider into a fight","the final circle with a storm closing in","looting a glowing chest under fire"]},
+ {k:["rainbow six","siege","r6"],bg:["a suburban house interior with barricaded windows","a luxury chalet with destroyed walls","a bank vault corridor","a coastal villa with reinforced walls","a skyscraper office at night"],sc:["breaching through a wall with an explosion","rappelling down the side of a building","defenders holding a room with barricades","a drone scouting the room before the push"]},
+ {k:["tarkov","arena breakout","delta force"],bg:["an abandoned Russian factory with rusty machinery","a snowy forest with old bunkers","a dark shopping mall interior with flickering lights","a coastline with a ruined resort","a desolate customs zone with trucks and warehouses","a lab interior with emergency red lights"],sc:["rushing to an extraction point as time runs out","a tense ambush in a dark corridor","looting a body while a teammate covers","a slow push through fog with flashlights"]},
+ {k:["the finals"],bg:["a game-show city arena with destructible skyscrapers","a neon Asian city set","a luxury yacht-filled marina","a stadium with crowds and giant screens"],sc:["a building being demolished in the middle of the fight","carrying a cash box to a vault","zip-lining between buildings","blowing through a wall to steal the objective"]},
+ {k:["gta","grand theft"],bg:["Los Santos-style Los Angeles streets at sunset","a palm-lined Vinewood-style boulevard","a downtown bank exterior with police cars","a desert airstrip with small planes","the docks at night with shipping containers","a beachfront with a pier"],sc:["a bank heist getaway with police sirens","a shootout in a parking garage","leaning out of a speeding car firing at police","a helicopter searchlight sweeping over the squad"]},
+ {k:["red dead","rdr"],bg:["a dusty Wild West frontier town","a snowy mountain trail","a swampy southern bayou","a train crossing a canyon","a ranch at golden hour"],sc:["robbing a moving train","a saloon shootout","a gunfight on horseback","a showdown at high noon"]},
+ {k:["rust"],bg:["a makeshift metal base on a hill","a radioactive industrial launch site","an oil rig in the ocean","a dense forest with a raided base","a desert with scrap structures"],sc:["raiding an enemy base with explosives","defending a base wall at night","fighting over a crate with a helicopter overhead","scavengers in a gunfight at a monument"]},
+ {k:["dayz"],bg:["an abandoned Eastern European village with zombies","a misty forest","a military airfield with wrecked planes","a coastal town with rusty boats","a hospital overrun with infected"],sc:["fighting off infected while running","a standoff with other survivors","looting a military tent in the rain","escaping a burning town"]},
+ {k:["hunt"],bg:["a Louisiana bayou at dusk","a creepy wooden lumber mill","a fog-covered graveyard","a swamp with burning buildings","an old church at night"],sc:["fighting a monster in a barn","carrying a glowing bounty under fire","a lantern-lit ambush","a stealthy approach in thick fog"]},
+ {k:["ready or not"],bg:["a gas station at night","a nightclub with neon lights","a motel corridor","a high-rise apartment","a dark warehouse"],sc:["a SWAT team stacking up at a door","breaching with a flashbang","clearing a room while shouting commands","a hostage rescue in the dark"]},
+ {k:["helldivers"],bg:["an alien bug planet with acid pools","a robot-infested burning city","a snowy alien wasteland","a jungle planet with giant plants"],sc:["calling in an orbital strike","fighting a swarm of giant insects","holding an extraction point as a ship descends","running from huge robots"]},
+ {k:["minecraft"],bg:["a blocky village rendered photorealistic","a dark cave with lava","a nether-like hellscape","a snowy mountain biome"],sc:["fighting monsters at night","defending a fortress","mining while enemies attack","escaping a creeper explosion"]}
+];
+const GENERIC_BG=["a ruined city street with burning cars","an abandoned industrial factory","a rooftop at dusk with a city skyline","a dense forest with fog","a desert village with dust","a rainy harbor with containers","a snowy mountain outpost","a neon-lit downtown at night"];
+const GENERIC_SC=["an intense close-quarters firefight","a desperate last stand","an aggressive push on an enemy position","a getaway under heavy fire","a victory moment just after the last enemy falls"];
+function gameData(g){g=(g||"").toLowerCase();return GAME_DATA.find(d=>d.k.some(k=>g.includes(k)))||null}
+const POSES=["sprinting toward cover","diving behind cover","peeking over a low wall and aiming","throwing a grenade","crouching and pointing out an enemy to the squad","firing in mid-stride","firing from the hip while advancing","reloading fast with a focused expression","vaulting over an obstacle","shouting a callout to a teammate","sliding into cover while shooting","leaning out of cover to take the shot","looking back over the shoulder while running","kneeling and scanning the horizon","walking toward the camera through smoke","flinching as a bullet hits the cover next to them","dragging a wounded teammate to cover","laying down covering fire"];
+const CAM=["low-angle hero shot","cinematic side tracking shot as if the camera runs alongside them","extreme close-up on the lead character's face with the squad blurred behind","wide establishing shot showing the full environment with the squad small but sharp","high-angle shot from a rooftop looking down","dynamic wide-angle shot from ground level","over-the-shoulder shot from behind the lead character","dramatic Dutch-angle shot","telephoto shot with compressed background","close medium shot with shallow depth of field","drone-height three-quarter shot looking down at the action"];
+const TIMES={random:"Rastgele",day:"Gündüz",golden:"Gün batımı",night:"Gece",storm:"Fırtınalı"};
+const LIGHT={day:["harsh midday sun with strong contrast","bright overcast daylight with soft shadows"],golden:["golden-hour backlight with long shadows and rim light","burning orange sunset with lens flare"],night:["moonlit night lit by muzzle flashes and burning wreckage","dark night with a flare casting red light"],storm:["stormy sky with lightning and rain streaks","heavy fog and rain with cold blue light"]};
+const FX=["muzzle flashes and flying shell casings","dust and debris blasting into the air","drifting smoke and embers","bullet impacts kicking up dirt","shattered glass suspended mid-air","motion blur on the background while characters stay sharp"];
+const FORM=["the squad staggered diagonally from foreground to midground","the lead character large in the foreground, teammates behind on either side","the squad spread in a wide line advancing together","characters at different depths, each in their own action","a tight group back-to-back covering every direction"];
+const VEST=["a black steel plate carrier vest with magazine pouches","a worn tan steel plate carrier vest","an olive-green steel plate carrier vest with pouches","a dark grey steel plate carrier vest, scratched and dusty"];
+
+const KEY="squadKapak.v2";
+let state={tab:"pubg",
+  pubg:{players:[{name:"Semih",weapon:"M416"},{name:"Oyuncu 2",weapon:"Kar98k"},{name:"Oyuncu 3",weapon:"Micro UZI"}],map:"Erangel",spot:"Pochinki",scene:"",time:"random"},
+  diger:{game:"Call of Duty Warzone",place:"",players:[{name:"Semih",weapon:"M4"},{name:"Oyuncu 2",weapon:"pompalı tüfek"}],outfit:"",vest:false,scene:"",time:"random"}};
+try{
+  const s=JSON.parse(localStorage.getItem(KEY)||"null");
+  if(s){if(s.tab)state.tab=s.tab;if(s.pubg)Object.assign(state.pubg,s.pubg);if(s.diger)Object.assign(state.diger,s.diger)}
+  else{const o=JSON.parse(localStorage.getItem("squadKapak.v1")||"null");if(o&&Array.isArray(o.players)){["players","map","spot","scene","time"].forEach(k=>{if(o[k]!==undefined)state.pubg[k]=o[k]});
+    state.diger.players=o.players.map(p=>({name:p.name,weapon:""}))}}
+}catch(e){}
+if(!["pubg","diger"].includes(state.tab))state.tab="pubg";
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+
+const variant={pubg:1,diger:1};
+const rolls={};
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const $=id=>document.getElementById(id);
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+
+function renderPlayers(tab){
+  const S=state[tab],box=$("players-"+tab);box.innerHTML="";
+  const wph=tab==="pubg"?"Silah":"Silah / eşya";
+  S.players.forEach((p,i)=>{
+    const row=document.createElement("div");row.className="player"+(i===0?" me":"");
+    row.innerHTML=`<div class="slot" title="Fotoğraf sırası">${i+1}</div>
+      <input id="${tab}-pn${i}" aria-label="Oyuncu ${i+1} adı" value="${esc(p.name)}" placeholder="Ad">
+      <input class="w" id="${tab}-pw${i}" aria-label="Oyuncu ${i+1} silahı" ${tab==="pubg"?'list="weapons"':""} value="${esc(p.weapon)}" placeholder="${wph}">
+      ${i===0?'<span></span>':`<button class="icon" type="button" aria-label="Oyuncu ${i+1}'i çıkar" data-rm="${i}">✕</button>`}`;
+    box.appendChild(row);
+    row.querySelector(`#${tab}-pn${i}`).addEventListener("input",e=>{S.players[i].name=e.target.value;update(false)});
+    row.querySelector(`#${tab}-pw${i}`).addEventListener("input",e=>{S.players[i].weapon=e.target.value;update(false)});
+    const rm=row.querySelector("[data-rm]");if(rm)rm.addEventListener("click",()=>{S.players.splice(i,1);renderPlayers(tab);update(true)});
+  });
+  $("add-"+tab).hidden=S.players.length>=4;
+  $("count-"+tab).textContent=S.players.length+"/4";
+}
+
+function reroll(tab){
+  const S=state[tab];
+  const t=S.time==="random"?pick(Object.keys(LIGHT)):S.time;
+  rolls[tab]={light:pick(LIGHT[t]),cam:pick(CAM),fx:shuffle(FX).slice(0,2),form:pick(FORM),poses:shuffle(POSES),
+    clothes:tab==="pubg"?shuffle(MAPS[S.map].clothes):[],vests:shuffle(VEST)};
+  if(tab==="diger"){const gd=gameData(S.game);rolls.diger.gd=gd;rolls.diger.bg=pick(gd?gd.bg:GENERIC_BG);rolls.diger.sc=pick(gd?gd.sc:GENERIC_SC);rolls.diger.gameKey=gd?gd.k[0]:""}
+}
+
+function sceneLine(S){
+  const sc=(S.scene||"").trim();
+  return sc?`Scene (written by the user in Turkish, translate it and follow it closely): "${sc}"`:"Moment: an intense, chaotic firefight.";
+}
+function cameraBlock(lines,R){
+  lines.push("","CAMERA & MOOD",`${cap(R.cam)}, ${R.form}. Lighting: ${R.light}. Effects: ${R.fx.join(", ")}.`);
+}
+const RULES_BASE=["- Size: 1920x1080, landscape 16:9.","- Photorealistic, cinematic lighting, looks like a still from a big-budget action movie.","- Action shot: real motion and tension, nobody standing still and posing.","- Faces: copy each person's facial features exactly from their reference photo (face shape, eyes, nose, eyebrows, hair, beard, skin tone). Faces clearly visible and sharp, not covered by masks or glasses."];
+const RULE_TEXT="- No unnecessary text: no letters, words, numbers, logos, watermarks, HUD, UI or borders anywhere in the image.";
+
+function buildPubg(){
+  const S=state.pubg,R=rolls.pubg,m=MAPS[S.map];
+  const ps=S.players.filter(p=>p.name.trim()),n=ps.length,spot=S.spot.trim(),L=[];
+  L.push(`Create a photorealistic, cinematic action image of ${n===1?"one person":n+" people"} in a battle royale firefight, using the attached reference photos for their faces.`,"","REFERENCE PHOTOS");
+  ps.forEach((p,i)=>L.push(`- Photo ${i+1} = ${p.name.trim()}`));
+  L.push("","SETTING",`Location: ${spot?spot+", ":""}inspired by ${S.map} — ${m.env}.`,sceneLine(S),"","CHARACTERS");
+  ps.forEach((p,i)=>{
+    const w=WEAPON_EN[p.weapon]||(p.weapon.trim()?`a ${p.weapon.trim()}`:"an assault rifle");
+    L.push(`- ${p.name.trim()} (face from Photo ${i+1}): holding ${w}, pose idea: ${R.poses[i%R.poses.length]} (adapt it if it doesn't fit the scene). Wearing ${R.clothes[i%R.clothes.length]}, with ${R.vests[i%R.vests.length]} over it. No helmet.`);
+  });
+  cameraBlock(L,R);
+  L.push("","MUST FOLLOW",...RULES_BASE,
+    "- Clothing: every character wears different, non-military civilian clothes that fit the map's setting. No camouflage, no uniforms.",
+    "- No helmets on anyone. Everyone wears a military steel plate carrier vest.",RULE_TEXT);
+  return {text:L.join("\n"),meta:`PUBG · ${S.map} · ${n} kişi`};
+}
+
+function buildDiger(){
+  const S=state.diger,R=rolls.diger;
+  const game=S.game.trim()||"a modern shooter video game",place=S.place.trim(),outfit=S.outfit.trim();
+  const ps=S.players.filter(p=>p.name.trim()),n=ps.length,L=[];
+  L.push(`Create a photorealistic, cinematic action image of ${n===1?"one person":n+" people"}, inspired by the video game ${game}, shown as a real-life live-action movie still. Use the attached reference photos for their faces.`,"","REFERENCE PHOTOS");
+  ps.forEach((p,i)=>L.push(`- Photo ${i+1} = ${p.name.trim()}`));
+  const loc=place?`${place}, in the world of ${game}`:(R.gd?R.bg+`, from the world of ${game}`:`an iconic, recognizable location from ${game} — this time ${R.bg}`);
+  L.push("","SETTING",`Location: ${loc}, recreated as a realistic real-world place.`,`Moment: ${R.sc}${R.gd?"":", in the style of "+game}.`,"","CHARACTERS");
+  ps.forEach((p,i)=>{
+    const w=p.weapon.trim()?p.weapon.trim():"a weapon that fits the game";
+    const wear=outfit?`an outfit in this style: ${outfit} (written in Turkish, translate it), different from the others`:`an outfit that fits the world of ${game}, different from the others`;
+    L.push(`- ${p.name.trim()} (face from Photo ${i+1}): holding ${w} (may be written in Turkish, translate it), pose idea: ${R.poses[i%R.poses.length]} (adapt it if it doesn't fit the scene). Wearing ${wear}${S.vest?`, with ${R.vests[i%R.vests.length]} over it. No helmet.`:"."}`);
+  });
+  cameraBlock(L,R);
+  L.push("","MUST FOLLOW",...RULES_BASE,
+    outfit?"- Clothing: every character's outfit is clearly different from the others while following the requested style.":`- Clothing: every character's outfit is clearly different and fits the world of ${game}.`);
+  if(S.vest)L.push("- No helmets on anyone. Everyone wears a military steel plate carrier vest.");
+  L.push(RULE_TEXT);
+  return {text:L.join("\n"),meta:`${S.game.trim()||"Oyun"} · ${n} kişi`};
+}
+
+function update(newRoll){
+  const tab=state.tab;
+  if(newRoll||!rolls[tab])reroll(tab);
+  else if(tab==="diger"){const gd=gameData(state.diger.game);if((gd?gd.k[0]:"")!==rolls.diger.gameKey)reroll(tab)}
+  const r=tab==="pubg"?buildPubg():buildDiger();
+  $("prompt").textContent=r.text;
+  $("varno").textContent="#"+String(variant[tab]).padStart(2,"0");
+  $("meta").textContent=r.meta;
+  save();
+}
+
+function setTab(tab){
+  state.tab=tab;
+  document.querySelectorAll(".tabs button").forEach(b=>{const on=b.dataset.tab===tab;b.setAttribute("aria-selected",String(on));b.tabIndex=on?0:-1});
+  $("panel-pubg").hidden=tab!=="pubg";$("panel-diger").hidden=tab!=="diger";
+  update(false);
+}
+
+function init(){
+  $("weapons").innerHTML=WEAPONS.map(w=>`<option value="${w}">`).join("");
+  $("games").innerHTML=GAMES.map(g=>`<option value="${g}">`).join("");
+  $("map").innerHTML=Object.keys(MAPS).map(k=>`<option>${k}</option>`).join("");
+  document.querySelectorAll(".timesel").forEach(s=>s.innerHTML=Object.entries(TIMES).map(([k,v])=>`<option value="${k}">${v}</option>`).join(""));
+  const P=state.pubg,D=state.diger;
+  $("map").value=P.map;$("spot").value=P.spot;$("scene-pubg").value=P.scene||"";$("time-pubg").value=P.time;
+  $("game").value=D.game;$("place").value=D.place;$("outfit").value=D.outfit;$("vest").checked=!!D.vest;$("time-diger").value=D.time;
+  const fillSpots=()=>{$("spots").innerHTML=MAPS[P.map].spots.map(s=>`<option value="${s}">`).join("")};fillSpots();
+
+  $("map").addEventListener("change",e=>{P.map=e.target.value;P.spot="";$("spot").value="";fillSpots();update(true)});
+  $("spot").addEventListener("input",e=>{P.spot=e.target.value;update(false)});
+  $("scene-pubg").addEventListener("input",e=>{P.scene=e.target.value;update(false)});
+  $("time-pubg").addEventListener("change",e=>{P.time=e.target.value;update(true)});
+  $("game").addEventListener("input",e=>{D.game=e.target.value;update(false)});
+  $("place").addEventListener("input",e=>{D.place=e.target.value;update(false)});
+  $("outfit").addEventListener("input",e=>{D.outfit=e.target.value;update(false)});
+  $("vest").addEventListener("change",e=>{D.vest=e.target.checked;update(false)});
+  $("time-diger").addEventListener("change",e=>{D.time=e.target.value;update(true)});
+
+  ["pubg","diger"].forEach(tab=>{
+    $("add-"+tab).addEventListener("click",()=>{const S=state[tab];if(S.players.length<4){S.players.push({name:"Oyuncu "+(S.players.length+1),weapon:tab==="pubg"?pick(WEAPONS.slice(0,20)):""});renderPlayers(tab);update(false)}});
+    renderPlayers(tab);
+  });
+
+  const tabs=[...document.querySelectorAll(".tabs button")];
+  tabs.forEach((b,i)=>{
+    b.addEventListener("click",()=>{setTab(b.dataset.tab);try{history.replaceState(null,"","#"+b.dataset.tab)}catch(e){}});
+    b.addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key==="ArrowLeft"){const n=tabs[(i+(e.key==="ArrowRight"?1:tabs.length-1))%tabs.length];n.focus();n.click()}});
+  });
+
+  $("shuffleBtn").addEventListener("click",()=>{variant[state.tab]++;update(true);const p=$("prompt");p.classList.remove("flash");void p.offsetWidth;p.classList.add("flash");toast("Yeni sahne hazır")});
+  $("copyBtn").addEventListener("click",()=>{
+    const t=$("prompt").textContent;
+    const fallback=()=>{const r=document.createRange();r.selectNodeContents($("prompt"));const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Metin seçildi, Ctrl+C ile kopyala")};
+    try{navigator.clipboard.writeText(t).then(()=>toast("Kopyalandı"),fallback)}catch(e){fallback()}
+  });
+
+  const fromHash=()=>{const h=location.hash.slice(1);return ["pubg","diger"].includes(h)?h:null};
+  window.addEventListener("hashchange",()=>{const h=fromHash();if(h)setTab(h)});
+  setTab(fromHash()||state.tab);
+}
+let tt;function toast(m){const t=$("toast");t.textContent=m;clearTimeout(tt);tt=setTimeout(()=>t.textContent="",2200)}
+init();
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+
+</body>
+</html>
