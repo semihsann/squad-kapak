@@ -1,5 +1,5 @@
 // Önce internetten en güncel sürümü alır; bağlantı yoksa son kaydedilen sürümü açar.
-const CACHE="squad-kapak-v1";
+const CACHE="kapak-promptlari-v2";
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(["./","index.html","manifest.json","icon-192.png","icon-512.png"])))});
 self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch",e=>{

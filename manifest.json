@@ -1,6 +1,6 @@
 {
-  "name": "Squad Kapak Atölyesi",
-  "short_name": "Squad Kapak",
+  "name": "Kapak Promptları",
+  "short_name": "Kapak Promptları",
   "description": "Oyun videosu kapakları için ChatGPT görsel tarifi üretici",
   "lang": "tr",
   "start_url": "./",
